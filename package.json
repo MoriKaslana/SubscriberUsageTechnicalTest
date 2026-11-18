@@ -1,0 +1,18 @@
+{
+  "name": "subscriber-usage",
+  "version": "1.0.0",
+  "description": "Backend service for recording and retrieving subscriber usage",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "snapshot": "node scripts/snapshot.js",
+    "cleanup": "node scripts/cleanup.js",
+    "test": "node --test tests/usage.test.js tests/q2.test.js tests/q4.test.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

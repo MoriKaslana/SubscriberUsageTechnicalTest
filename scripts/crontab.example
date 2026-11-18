@@ -1,0 +1,84 @@
+# =============================================================================
+# subscriber-usage — crontab example
+# =============================================================================
+#
+# HOW TO INSTALL (Linux / macOS)
+#   1. Open your crontab for editing:
+#        crontab -e
+#   2. Paste the block of your choice (Option A or Option B) below.
+#   3. Adjust /path/to/subscriber-usage and /path/to/node to match your system.
+#      Find the node path with:  which node
+#   4. Create the logs directory first:
+#        mkdir -p /path/to/subscriber-usage/logs
+#
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# OPTION A — using CRON_TZ (simpler, requires a cron daemon that supports it,
+#             e.g. vixie-cron on most modern Linux distros and macOS)
+# -----------------------------------------------------------------------------
+
+CRON_TZ=Asia/Jakarta
+
+# Snapshot: 08:00, 12:00, 15:00 WIB
+0  8 * * * /path/to/node /path/to/subscriber-usage/scripts/snapshot.js >> /path/to/subscriber-usage/logs/snapshot.log 2>&1
+0 12 * * * /path/to/node /path/to/subscriber-usage/scripts/snapshot.js >> /path/to/subscriber-usage/logs/snapshot.log 2>&1
+0 15 * * * /path/to/node /path/to/subscriber-usage/scripts/snapshot.js >> /path/to/subscriber-usage/logs/snapshot.log 2>&1
+
+# Cleanup: 01:00 WIB daily (removes snapshots older than 30 days)
+0  1 * * * /path/to/node /path/to/subscriber-usage/scripts/cleanup.js  >> /path/to/subscriber-usage/logs/snapshot.log 2>&1
+
+# -----------------------------------------------------------------------------
+# OPTION B — UTC-converted times (use this if your cron daemon ignores CRON_TZ)
+#
+#   WIB is UTC+7, so subtract 7 hours:
+#     01:00 WIB → 18:00 UTC (previous day)   ← cleanup
+#     08:00 WIB → 01:00 UTC
+#     12:00 WIB → 05:00 UTC
+#     15:00 WIB → 08:00 UTC
+# -----------------------------------------------------------------------------
+
+# Snapshot: 01:00, 05:00, 08:00 UTC  (= 08:00, 12:00, 15:00 WIB)
+0  1 * * * /path/to/node /path/to/subscriber-usage/scripts/snapshot.js >> /path/to/subscriber-usage/logs/snapshot.log 2>&1
+0  5 * * * /path/to/node /path/to/subscriber-usage/scripts/snapshot.js >> /path/to/subscriber-usage/logs/snapshot.log 2>&1
+0  8 * * * /path/to/node /path/to/subscriber-usage/scripts/snapshot.js >> /path/to/subscriber-usage/logs/snapshot.log 2>&1
+
+# Cleanup: 18:00 UTC daily (= 01:00 WIB next day)
+0 18 * * * /path/to/node /path/to/subscriber-usage/scripts/cleanup.js  >> /path/to/subscriber-usage/logs/snapshot.log 2>&1
+
+# =============================================================================
+# WINDOWS — Task Scheduler
+# =============================================================================
+#
+# Windows does not have cron, but Task Scheduler provides equivalent
+# functionality. Run the commands below in an elevated PowerShell prompt.
+#
+# Prerequisites:
+#   - Replace C:\path\to\subscriber-usage with your actual project path.
+#   - Replace C:\path\to\node.exe (find it with: where.exe node).
+#   - The times below are in WIB; change the -At value to match your needs.
+#     If your Windows clock is not set to WIB, adjust accordingly.
+#
+# --- Snapshot task (08:00 WIB) ---
+# schtasks /Create /TN "SubscriberUsage\Snapshot0800" /TR "\"C:\path\to\node.exe\" \"C:\path\to\subscriber-usage\scripts\snapshot.js\"" /SC DAILY /ST 08:00 /F
+#
+# --- Snapshot task (12:00 WIB) ---
+# schtasks /Create /TN "SubscriberUsage\Snapshot1200" /TR "\"C:\path\to\node.exe\" \"C:\path\to\subscriber-usage\scripts\snapshot.js\"" /SC DAILY /ST 12:00 /F
+#
+# --- Snapshot task (15:00 WIB) ---
+# schtasks /Create /TN "SubscriberUsage\Snapshot1500" /TR "\"C:\path\to\node.exe\" \"C:\path\to\subscriber-usage\scripts\snapshot.js\"" /SC DAILY /ST 15:00 /F
+#
+# --- Cleanup task (01:00 WIB) ---
+# schtasks /Create /TN "SubscriberUsage\Cleanup" /TR "\"C:\path\to\node.exe\" \"C:\path\to\subscriber-usage\scripts\cleanup.js\"" /SC DAILY /ST 01:00 /F
+#
+# To view registered tasks:
+#   schtasks /Query /TN "SubscriberUsage" /FO LIST
+#
+# To delete a task:
+#   schtasks /Delete /TN "SubscriberUsage\Snapshot0800" /F
+#
+# Note: Task Scheduler does not redirect output automatically.
+# Wrap the command in a .bat file that appends to a log file, e.g.:
+#   @echo off
+#   "C:\path\to\node.exe" "C:\path\to\subscriber-usage\scripts\snapshot.js" >> "C:\path\to\subscriber-usage\logs\snapshot.log" 2>&1
+# Then point the task at that .bat file instead.
